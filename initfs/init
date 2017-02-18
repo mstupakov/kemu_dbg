@@ -1,0 +1,16 @@
+#!/bin/sh
+
+mkdir /mnt/
+mkdir /sys/
+mkdir /tmp/
+mkdir /proc/
+
+/bin/mount -t devtmpfs devtmpfs /dev
+/bin/mount -t sysfs sysfs /sys
+/bin/mount -t tmpfs tmpfs /tmp
+/bin/mount -t proc none /proc
+
+mkdir /dev/pts/
+/bin/mount -t devpts none /dev/pts
+
+exec /sbin/init
