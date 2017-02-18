@@ -1,0 +1,42 @@
+#gdb implementation of the linux lsmod
+define lsmod
+  set $current = modules.next
+  set $offset = ((int)&((struct module *)0).list)
+  printf "Module\tAddress\tSections\n"
+
+  while($current.next != modules.next)
+    printf "%s\t%p\t%d\n", \
+      ((struct module *) (((void *) ($current)) - $offset ) )->name, \
+      ((struct module *) (((void *) ($current)) - $offset ) )->module_core, \
+      ((struct module *) (((void *) ($current)) - $offset ) ).sect_attrs.nsections
+
+    set $nsect = ((struct module *) (((void *) ($current)) - $offset ) ).sect_attrs.nsections
+    set $i = 0
+
+    printf "\n\nPlease insert: \n"
+    
+    printf "add-symbol-file FILE "
+    while($i < $nsect)
+      set $sec_name = ((struct module *) (((void *) ($current)) - $offset ) ).sect_attrs->attrs[$i].name
+      if $sec_name[1] == 't' && $sec_name[4] == 't' && $sec_name[5] == 0
+        printf "%p \\", \
+          ((struct module *) (((void *) ($current)) - $offset ) ).sect_attrs->attrs[$i].address
+      end
+
+      set $i = $i + 1
+    end
+
+    set $i = 0
+    while($i < $nsect)
+      printf "\n -s %s %p \\", \
+        ((struct module *) (((void *) ($current)) - $offset ) ).sect_attrs->attrs[$i].name, \
+        ((struct module *) (((void *) ($current)) - $offset ) ).sect_attrs->attrs[$i].address
+
+      set $i = $i + 1
+    end
+
+    printf "\n\n"
+
+    set $current = $current.next
+  end
+end

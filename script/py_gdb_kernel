@@ -1,0 +1,104 @@
+#!/usr/bin/python
+
+python
+import os
+import re
+
+
+class LxDmsgCmd(gdb.Command):
+  
+  def __init__(self):
+    super(LxDmsgCmd, self).__init__ ("dmesg", gdb.COMMAND_USER)
+
+  def invoke(self, arg, from_tty):
+    LxDbg().dmesg()
+
+
+class LxModLoadCmd(gdb.Command):
+  
+  def __init__(self):
+    super(LxModLoadCmd, self).__init__ ("lx-symbols-load", gdb.COMMAND_USER)
+
+  def invoke(self, arg, from_tty):
+    LxDbg().lms()
+
+
+class LxDbg:
+
+  def __init__(self):
+    self.modules = {}
+    self.modules_path = []
+
+  def dmesg(self):
+      print("Hello!!!")
+      print(gdb.parse_and_eval('log_buf').cast(gdb.lookup_type('char').pointer()).string())
+      pass
+
+
+  def lsmod(self):
+    offset = gdb.lookup_type('struct module')['list'].bitpos / 8
+    current = gdb.parse_and_eval('modules')['next']
+    while (current['next'] != gdb.parse_and_eval('modules')['next']):
+      module = (current.reference_value().cast(gdb.lookup_type('void').pointer()) - offset).cast(gdb.lookup_type('struct module').pointer())
+      _sections = []
+      _index = 0    
+      _name = module['name'].cast(gdb.lookup_type('char').pointer()).string()
+      _n_sections = module['sect_attrs']['nsections']
+      gdb.write('Module \'%s\' [%u]:\n' % (_name, _n_sections))
+      while (_index < _n_sections):
+        gdb.write('  -  %-110s   0x%.16x\n' % (module['sect_attrs']['attrs'][_index]['name'].cast(gdb.lookup_type('char').pointer()).string(), long(module['sect_attrs']['attrs'][_index]['address'].__str__()))) 
+        _sections.append((module['sect_attrs']['attrs'][_index]['name'].cast(gdb.lookup_type('char').pointer()).string(), long(module['sect_attrs']['attrs'][_index]['address'].__str__())))
+        _index += 1
+      gdb.write('\n')
+      self.modules[_name] = _sections
+      current = current['next']
+    print(self.modules)
+
+
+
+  def _print_modules(self):
+    print("--- Loaded modules ---\n")
+    for key, sections in self.modules.items():
+      print(" - %s:" % key)
+      for sect in sections:
+        print("        %s   0x%0*x" % (sect[0], 16, sect[1]))
+      print("")
+
+
+
+  def _find_path_to_modules(self):
+    '''_path = "/development/kernel_debugging/qemu_test_env/"''' 
+    _path = os.getcwd()
+    for root, dirs, files in os.walk(_path):
+      for name in files:
+        if name.endswith('.ko'):
+          print("%s" % (root + '/' + name))
+          self.modules_path.append(root + '/' + name)
+
+
+  def _load_module_symbols(self):
+    for module in self.modules:
+      cmd = ""
+      text_sec = ""
+      module_pattern = ".*/{0}\.ko$".format(module.replace("_", r"[_\-]"))
+      for module_path in self.modules_path:
+        if re.match(module_pattern, module_path):
+          print("Found path for %s: %s" % (module, module_path))
+          for sec in self.modules[module]:
+            cmd = cmd + " -s " + sec[0] + " " + hex(sec[1])
+            if sec[0] == ".text":
+              text_sec = hex(sec[1])
+          last_cmd = ("add-symbol-file %s %s %s") % (module_path, text_sec, cmd)
+          print(last_cmd)
+          gdb.execute(last_cmd)
+          break
+
+
+  def lms(self):
+    self.lsmod()
+    self._find_path_to_modules()
+    self._load_module_symbols()
+
+
+LxDmsgCmd()
+LxModLoadCmd()
