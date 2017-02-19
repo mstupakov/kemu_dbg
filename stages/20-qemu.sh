@@ -8,7 +8,7 @@ function script_make {
     cmd="-nographic "
     cmd="-serial \${E_SERIAL_TTY} ${cmd}"
     cmd="-monitor \${E_MONITOR_TTY} ${cmd}"
-    cmd="-append 'earlyprintk=/dev/ttyS0 console=/dev/ttyS0' ${cmd}"
+    cmd="-append \"earlyprintk=/dev/ttyS0 console=/dev/ttyS0 \${P_QEMU_APPEND}\" ${cmd}"
     cmd="-kernel \${P_QEMU_BZIMAGE} ${cmd}"
     cmd="-initrd \${E_INITFS_FILE} ${cmd}"
     cmd="-m \${P_QEMU_MEMORY} ${cmd}"
