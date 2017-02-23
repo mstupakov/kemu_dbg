@@ -6,12 +6,15 @@ import re
 
 
 class LxDmsgCmd(gdb.Command):
-  
+
   def __init__(self):
     super(LxDmsgCmd, self).__init__ ("dmesg", gdb.COMMAND_USER)
 
   def invoke(self, arg, from_tty):
-    LxDbg().dmesg()
+    obj = LxDbg()
+    obj.pagination_off()
+    obj.dmesg()
+    obj.pagination_restore()
 
 
 class LxModLoadCmd(gdb.Command):
@@ -20,14 +23,28 @@ class LxModLoadCmd(gdb.Command):
     super(LxModLoadCmd, self).__init__ ("lx-symbols-load", gdb.COMMAND_USER)
 
   def invoke(self, arg, from_tty):
-    LxDbg().lms()
+    obj = LxDbg()
+    obj.pagination_off()
+    obj.lms()
+    obj.pagination_restore()
 
 
 class LxDbg:
+  pagination = bool
 
   def __init__(self):
     self.modules = {}
     self.modules_path = []
+
+
+  def pagination_off(self):
+    self.pagination = gdb.execute("show pagination", to_string=True).endswith("on.\n")
+    gdb.execute("set pagination off")
+
+
+  def pagination_restore(self):
+    gdb.execute("set pagination %s" % ("on" if self.pagination else "off"))
+
 
   def dmesg(self):
       print("Hello!!!")
@@ -67,8 +84,9 @@ class LxDbg:
 
 
   def _find_path_to_modules(self):
-    '''_path = "/development/kernel_debugging/qemu_test_env/"''' 
-    _path = os.getcwd()
+    _path = os.getenv('KEMU_MODULE_DIR')
+    if _path == None:
+        _path = os.getcwd()
     for root, dirs, files in os.walk(_path):
       for name in files:
         if name.endswith('.ko'):

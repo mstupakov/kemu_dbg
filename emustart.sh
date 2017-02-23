@@ -2,7 +2,7 @@
 
 BASE=${PWD}
 
-OUTPUT=/tmp/kdbg_emu/$$/
+OUTPUT=/tmp/kemu_dbg/$$/
 CONFIG=${OUTPUT}/config
 
 INITFS=${BASE}/initfs/
@@ -148,7 +148,7 @@ function stages_run {
     for stage in ${STAGES}/*
     do
         echo ${stage}
-        ${stage} ${CONFIG}
+        ${stage} ${CONFIG} ${PROFILE}/${PROFILE_NAME}
 
         if ! [ $? ]
         then

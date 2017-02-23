@@ -1,5 +1,6 @@
 #!/bin/bash
 source ${1}
+source ${2}
 
 function script_make {
     echo "#!/bin/bash"

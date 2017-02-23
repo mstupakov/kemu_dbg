@@ -1,5 +1,6 @@
 #!/bin/bash
 source ${1}
+source ${2}
 
 INIT_FS=${E_INITFS_FILE}
 INIT_FS_DIR=${E_INITFS}
